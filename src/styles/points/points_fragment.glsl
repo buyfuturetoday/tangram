@@ -17,7 +17,7 @@ varying vec2 v_texcoord;
 varying vec4 v_world_position;
 varying float v_alpha_factor;
 
-#ifdef TANGRAM_SHADER_POINT
+#ifdef TANGRAM_HAS_SHADER_POINTS
     varying vec4 v_outline_color;
     varying float v_outline_edge;
     varying float v_aa_factor;
@@ -31,7 +31,7 @@ varying float v_alpha_factor;
 #pragma tangram: raster
 #pragma tangram: global
 
-#ifdef TANGRAM_SHADER_POINT
+#ifdef TANGRAM_HAS_SHADER_POINTS
     // Draw an SDF-style point
     void drawPoint (inout vec4 color) {
         vec2 uv = v_texcoord * 2. - 1.; // fade alpha near circle edge
@@ -51,24 +51,28 @@ void main (void) {
 
     vec4 color = v_color;
 
-    // Only apply shader blocks to point, not to attached text (N.B.: for compatibility with ES)
-    if (u_point_type == TANGRAM_POINT_TYPE_TEXTURE) { // sprite texture
-        color *= texture2D(u_texture, v_texcoord);
+    #ifdef TANGRAM_HAS_SHADER_POINTS
+        // Only apply shader blocks to point, not to attached text (N.B.: for compatibility with ES)
+        if (u_point_type == TANGRAM_POINT_TYPE_TEXTURE) { // sprite texture
+            color *= texture2D(u_texture, v_texcoord);
 
-        #pragma tangram: color
-        #pragma tangram: filter
-    }
-    else if (u_point_type == TANGRAM_POINT_TYPE_LABEL) { // label texture
-        color = texture2D(u_texture, v_texcoord);
-        color.rgb /= max(color.a, 0.001); // un-multiply canvas texture
-    }
-    #ifdef TANGRAM_SHADER_POINT
+            #pragma tangram: color
+            #pragma tangram: filter
+        }
+        else if (u_point_type == TANGRAM_POINT_TYPE_LABEL) { // label texture
+            color = texture2D(u_texture, v_texcoord);
+            color.rgb /= max(color.a, 0.001); // un-multiply canvas texture
+        }
         else if (u_point_type == TANGRAM_POINT_TYPE_SHADER) { // shader point
             drawPoint(color); // draw a point
 
             #pragma tangram: color
             #pragma tangram: filter
         }
+    #else
+        // If shader points not supported, assume label texture
+        color = texture2D(u_texture, v_texcoord);
+        color.rgb /= max(color.a, 0.001); // un-multiply canvas texture
     #endif
 
     color.a *= v_alpha_factor;
