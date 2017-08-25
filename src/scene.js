@@ -554,7 +554,22 @@ export default class Scene {
                 );
                 this.setRenderState(state);
             }
+
+            // Depth pre-pass for translucency
+            let translucent = (style.blend === 'translucent' && program_key === 'program'); // skip for selection buffer render pass
+            if (translucent) {
+                this.gl.colorMask(false, false, false, false);
+                this.renderStyle(style.name, program_key);
+                this.gl.colorMask(true, true, true, true);
+                this.gl.enable(this.gl.POLYGON_OFFSET_FILL); // prevents compounding alpha from overlapping polys
+            }
+
             count += this.renderStyle(style.name, program_key);
+
+            if (translucent) {
+                this.gl.disable(this.gl.POLYGON_OFFSET_FILL);
+            }
+
             last_blend = style.blend;
         }
 
@@ -689,7 +704,7 @@ export default class Scene {
                 });
             }
             // Traditional alpha blending
-            else if (blend === 'overlay' || blend === 'inlay') {
+            else if (blend === 'overlay' || blend === 'inlay' || blend === 'translucent') {
                 render_states.blending.set({
                     blend: true,
                     src: gl.SRC_ALPHA, dst: gl.ONE_MINUS_SRC_ALPHA,

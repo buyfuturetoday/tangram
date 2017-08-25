@@ -35,6 +35,7 @@ export default class RenderStateManager {
         this.defaults.depth_write = true;
         this.defaults.depth_test = true;
         gl.depthFunc(gl.LESS); // depth function only needs to be set once
+        gl.polygonOffset(0, -1); // enabled only for second pass of translucency
 
     	// Culling
         this.culling = new RenderState(
